@@ -1,0 +1,200 @@
+% =========================================================
+% Informe TP6 – Sistema de Caché DNS con Tabla Hash
+% Autor: <<TU NOMBRE>>
+% Fecha: \today
+% =========================================================
+\documentclass[11pt,a4paper]{article}
+
+% ----------- Paquetes básicos -----------
+\usepackage[spanish, es-noquoting, es-nodecimaldot]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{amsmath, amssymb}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{listings}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  urlcolor=blue!60!black
+}
+
+% ----------- Código -----------
+\lstdefinestyle{cstyle}{
+  language=C,
+  basicstyle=\ttfamily\small,
+  numbers=left,
+  numberstyle=\scriptsize\color{gray},
+  stepnumber=1,
+  numbersep=8pt,
+  tabsize=4,
+  showstringspaces=false,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{black!20},
+  keywordstyle=\color{blue!70!black}\bfseries,
+  commentstyle=\color{green!40!black}\itshape,
+  stringstyle=\color{red!60!black},
+}
+\lstset{style=cstyle}
+
+\title{TP6 — Sistema de Caché DNS con Tabla Hash}
+\author{<<Tu Nombre>> \\ <<Curso y Legajo>>}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+En este trabajo se desarrolla un sistema de caché DNS utilizando una \textbf{tabla hash con encadenamiento} para el manejo de colisiones. El objetivo es aplicar los conceptos de memoria dinámica, estructuras anidadas y listas enlazadas vistos en la \textbf{Guía 3} de la materia, junto con las \textbf{Consideraciones Finales} de modularización, manejo de errores y pruebas.
+\end{abstract}
+
+\section{Enunciado resumido}
+El trabajo práctico requiere implementar un sistema que guarde registros DNS en una \emph{tabla hash}, permitiendo:
+\begin{itemize}
+  \item Insertar, buscar, actualizar y eliminar entradas DNS.
+  \item Limpiar entradas expiradas según su TTL.
+  \item Mostrar estadísticas del caché: cantidad de entradas, colisiones, factor de carga.
+  \item Interactuar con el usuario mediante un menú de opciones.
+\end{itemize}
+
+\section{Fundamentos de la Guía 3}
+\begin{itemize}
+  \item Uso de \texttt{malloc} y \texttt{free} para reservar y liberar memoria dinámica.
+  \item Estructuras anidadas (\texttt{typedef struct}) para modelar entidades complejas.
+  \item Listas simplemente enlazadas para recorrer, insertar y eliminar nodos dinámicos.
+\end{itemize}
+
+\section{Descripción de las estructuras de datos utilizadas}
+El sistema se basa en las siguientes estructuras principales:
+
+\subsection*{EntradaDNS}
+Agrupa toda la información de un registro DNS:
+\begin{itemize}
+  \item \textbf{Registro}: dominio, tipo, IP (IPv4 e IPv6).
+  \item \textbf{Metadatos}: TTL, timestamp de cacheo, cantidad de hits y servidor origen.
+  \item \textbf{Estadísticas}: tiempo de resolución, prioridad (MX), alias (CNAME).
+\end{itemize}
+
+\subsection*{Nodo}
+Cada nodo de lista enlazada contiene una \texttt{EntradaDNS} y un puntero al siguiente nodo.  
+Se utiliza para resolver colisiones dentro de cada bucket de la tabla hash.
+
+\subsection*{TablaHash}
+Arreglo de punteros de tamaño fijo (50–100 buckets).  
+Cada posición apunta al inicio de una lista de nodos.  
+El índice se calcula mediante una función hash aplicada al nombre del dominio.
+
+\section{Explicación de los algoritmos implementados}
+
+\subsection*{Función hash}
+Convierte el dominio (string) en un índice de la tabla:
+\[
+\text{hash}(dominio) = (h \times 33 + c) \bmod \text{TAM\_TABLA}
+\]
+donde \(h\) se inicializa en 5381 (algoritmo DJB2).  
+Esto permite una distribución uniforme de claves y minimiza colisiones.
+
+\subsection*{Inserción}
+1. Calcular índice con la función hash.  
+2. Si el bucket está vacío, crear el primer nodo.  
+3. Si ya existe una lista, recorrerla:  
+   \begin{itemize}
+     \item Si el dominio ya existe, actualizar su información.  
+     \item Si no, insertar el nuevo nodo al inicio (O(1)).
+   \end{itemize}
+
+\subsection*{Búsqueda}
+1. Calcular índice hash del dominio.  
+2. Recorrer la lista correspondiente hasta encontrar coincidencia.  
+3. Si se encuentra, retornar la entrada e incrementar el contador de \emph{hits}.  
+Complejidad: \(O(1)\) promedio, \(O(n)\) en el peor caso.
+
+\subsection*{Eliminación}
+1. Calcular índice hash.  
+2. Buscar nodo y ajustar punteros según sea cabeza, medio o final.  
+3. Liberar memoria con \texttt{free()}.  
+Complejidad: \(O(1)\) promedio.
+
+\subsection*{Limpieza por TTL}
+Recorre toda la tabla, compara el tiempo actual con el almacenado y elimina entradas expiradas.
+
+\subsection*{Estadísticas}
+Calcula:
+\begin{itemize}
+  \item Número total de entradas.
+  \item Buckets vacíos y con colisiones.
+  \item Longitud máxima de lista.
+  \item Factor de carga \(=\frac{\text{entradas}}{\text{buckets}}\).
+\end{itemize}
+
+\section{Ejemplos de uso del programa}
+A continuación se muestra una sesión típica:
+
+\begin{lstlisting}[language=bash,caption={Ejecución del programa}]
+=== Sistema de Cache DNS ===
+1. Cachear nueva entrada
+2. Buscar dominio
+3. Actualizar entrada
+4. Eliminar entrada
+5. Limpiar expirados
+6. Mostrar todos los dominios
+7. Mostrar estadisticas
+8. Salir
+> 1
+Dominio: www.example.com
+IP: 93.184.216.34
+TTL: 3600
+Servidor: 8.8.8.8
+Entrada cacheada correctamente!
+
+> 2
+Dominio a buscar: www.example.com
+IP encontrada: 93.184.216.34
+Hits: 1
+
+> 7
+Entradas totales: 12
+Buckets con colision: 3
+Factor de carga: 0.24
+\end{lstlisting}
+
+\section{Gestión de memoria y modularización}
+Cada nodo se reserva dinámicamente y se libera al eliminar una entrada o al finalizar el programa.  
+El código se organiza en módulos:
+\begin{itemize}
+  \item \texttt{hash.c/h} — gestión de la tabla hash y funciones principales.
+  \item \texttt{dns.c/h} — estructuras, carga y visualización de datos DNS.
+  \item \texttt{utiles.c/h} — manejo de tiempo y funciones auxiliares.
+  \item \texttt{main.c} — menú principal e interacción con el usuario.
+\end{itemize}
+
+\section{Código fuente (espacios para insertar)}
+\subsection*{main.c}
+\begin{lstlisting}[caption={main.c (placeholder)}]
+// TODO: implementar menú principal
+\end{lstlisting}
+
+\subsection*{hash.c}
+\begin{lstlisting}[caption={hash.c (placeholder)}]
+// TODO: implementar funciones hash(), insertar(), buscar(), eliminar()
+\end{lstlisting}
+
+\subsection*{dns.c}
+\begin{lstlisting}[caption={dns.c (placeholder)}]
+// TODO: implementar funciones de creación, carga y visualización de entradas
+\end{lstlisting}
+
+\section{Conclusiones}
+\begin{itemize}
+  \item La tabla hash permite accesos promedio O(1), optimizando el rendimiento del sistema DNS.
+  \item El manejo dinámico de memoria y la liberación correcta evitan fugas.
+  \item Se cumplieron los requisitos de modularización, validación y documentación.
+\end{itemize}
+
+\end{document}

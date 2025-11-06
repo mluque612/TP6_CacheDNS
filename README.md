@@ -44,23 +44,67 @@ Cada registro tiene un **TTL (Time To Live)** que indica cuándo expira.
 
 ```text
 📦 TP6_CacheDNS/
-│
-├── src/
-│   ├── main.c              # Función principal, menú de usuario
-│   ├── hash.c              # Implementación de la tabla hash (insertar, buscar, eliminar)
-│   ├── hash.h              # Definición de estructuras y prototipos
-│   ├── dns.c               # Manejo de estructuras DNS (crear, mostrar, generar)
-│   ├── dns.h               # Definiciones de Registro, Metadatos, Estadísticas
-│   ├── utiles.c            # Funciones auxiliares (leer_linea, IP aleatoria, tiempo)
-│   ├── utiles.h            # Headers de utilidades
-│
-├── docs/
-│   ├── informe-tp6.tex     # Informe LaTeX
-│   ├── informe-tp6.pdf     # Informe compilado
-│
-├── README.md               # Documentación del proyecto
-├── Makefile (opcional)     # Compilación automática
-└── tp6.exe / tp6           # Ejecutable final
+ ├── tp6_dns_cache.c     ← todo el código en este archivo
+ ├── informe-tp6.tex
+ ├── README.md
+ └── LICENSE
 
+---
 
+| Función            | Descripción                                           | Complejidad   |
+|--------------------|-------------------------------------------------------|---------------|
+| `hash_djb2()`      | Calcula el hash del dominio (función DJB2)            | O(n)          |
+| `insertar()`       | Inserta o actualiza una entrada en la tabla           | O(1) promedio |
+| `buscar()`         | Busca un dominio y devuelve puntero al nodo           | O(1) promedio |
+| `eliminar()`       | Elimina una entrada por dominio                       | O(1) promedio |
+| `limpiar_expirados()` | Elimina entradas vencidas (TTL)                    | O(n)          |
+| `estadisticas()`   | Muestra colisiones, factor de carga y totales         | O(n)          |
+| `mostrar_todos()`  | Recorre toda la tabla hash                            | O(n)          |
+| `generar_datos()`  | Crea datos DNS aleatorios (IPs, TTL, hits)            | O(k)          |
+
+---
+
+🧩 Menú del Programa
+
+=== Sistema de Cache DNS ===
+1. Cachear nueva entrada (insertar/actualizar)
+2. Buscar dominio
+3. Actualizar (pedir datos y sobrescribir)
+4. Eliminar entrada
+5. Limpiar expirados por TTL
+6. Mostrar bucket
+7. Mostrar todos los dominios
+8. Mostrar estadisticas
+9. Generar datos aleatorios
+0. Salir
+
+---
+
+## 🧰 Compilación y Ejecución
+
+```bash
+gcc -std=c11 -Wall -Wextra -O2 -o tp6 tp6_dns_cache.c
+./tp6
+
+---
+
+=== Sistema de Cache DNS ===
+> 9
+Cantidad a generar: 10
+Se generaron 10 entradas de prueba.
+
+> 8
+Entradas totales: 10
+Buckets: 50 | Vacíos: 42 | Buckets con colisión: 1
+Factor de carga: 0.20
+Longitud máxima de un bucket: 2
+
+## 📜 Licencia
+
+Este proyecto está bajo una **Licencia de Uso Educativo y Académico**.
+
+Podés consultar el texto completo en el archivo [LICENSE].
+
+Autor: **Mateo Luque-Rivata**  
+Instituto Univversitario Aeronautico — 2025
 
